@@ -32,26 +32,18 @@ def scrape(airport, api_key, mode="Upsert"):
         records = []
 
         for item in data.get("data", []):
-            # Parse departure and arrival info
             dep = item.get("departure", {})
             arr = item.get("arrival", {})
             flight = item.get("flight", {})
             airline = item.get("airline", {})
 
-            dep_time_str = dep.get("scheduled")
-            arr_time_str = arr.get("scheduled")
+            dep_time_utc = dep.get("scheduled")
+            arr_time_utc = arr.get("scheduled")
 
-            departure_time = dep_time_str
-            arrival_time = arr_time_str
+            if not dep_time_utc or not arr_time_utc:
+                continue
 
-            # --- Compute dayOfWeek using local departure time ---
-            if departure_time:
-                dt = parser.isoparse(departure_time)
-                local_day_of_week = dt.strftime("%A")
-            else:
-                local_day_of_week = None
-
-            # Lookup airport names and iataCodes from MongoDB
+            # Replace +00:00 with local offsets
             dep_iata = dep.get("iata")
             arr_iata = arr.get("iata")
 
@@ -64,7 +56,29 @@ def scrape(airport, api_key, mode="Upsert"):
             dep_iata_final = dep_airport_doc["iataCode"] if dep_airport_doc else dep_iata
             arr_iata_final = arr_airport_doc["iataCode"] if arr_airport_doc else arr_iata
 
-            # Use operating airline if present
+            dep_tz = dep_airport_doc.get("timezone") if dep_airport_doc else None
+            arr_tz = arr_airport_doc.get("timezone") if arr_airport_doc else None
+
+            if dep_tz:
+                dt_dep_utc = parser.isoparse(dep_time_utc)
+                dt_dep_local = dt_dep_utc.astimezone(pytz.timezone(dep_tz))
+                dep_time_local_str = dt_dep_local.isoformat()
+            else:
+                dep_time_local_str = dep_time_utc
+
+            if arr_tz:
+                dt_arr_utc = parser.isoparse(arr_time_utc)
+                dt_arr_local = dt_arr_utc.astimezone(pytz.timezone(arr_tz))
+                arr_time_local_str = dt_arr_local.isoformat()
+            else:
+                arr_time_local_str = arr_time_utc
+
+            if dep_time_local_str:
+                dt = parser.isoparse(dep_time_local_str)
+                local_day_of_week = dt.strftime("%A")
+            else:
+                local_day_of_week = None
+
             codeshared = flight.get("codeshared")
             if codeshared:
                 airline_name = codeshared.get("airline_name")
@@ -73,8 +87,7 @@ def scrape(airport, api_key, mode="Upsert"):
                 airline_name = airline.get("name")
                 flight_number = flight.get("number")
 
-            # Skip if missing required fields
-            if not (dep_airport_name and arr_airport_name and departure_time and arrival_time):
+            if not (dep_airport_name and arr_airport_name and dep_time_local_str and arr_time_local_str):
                 continue
 
             record = {
@@ -86,8 +99,8 @@ def scrape(airport, api_key, mode="Upsert"):
                     "name": arr_airport_name,
                     "iataCode": arr_iata_final
                 },
-                "departureTime": departure_time,
-                "arrivalTime": arrival_time,
+                "departureTime": dep_time_local_str,
+                "arrivalTime": arr_time_local_str,
                 "airline": airline_name,
                 "flightNumber": flight_number,
                 "dayOfWeek": local_day_of_week
@@ -99,7 +112,7 @@ def scrape(airport, api_key, mode="Upsert"):
             print("No valid flight data returned.")
             return False, 0, mode
 
-        # Deduplicate by key fields
+        # Deduplicate
         unique = {}
         for rec in records:
             key = (
@@ -111,7 +124,6 @@ def scrape(airport, api_key, mode="Upsert"):
             unique[key] = rec
         records = list(unique.values())
 
-        # Store in MongoDB or JSON
         if mode == "Upsert":
             for rec in records:
                 flights_col.update_one(

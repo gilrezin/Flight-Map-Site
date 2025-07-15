@@ -4,7 +4,6 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from pymongo import MongoClient
 from datetime import datetime
-import pytz
 import scrape_real_flights
 import os
 
@@ -27,7 +26,7 @@ if os.path.exists("completed_scrapes.txt"):
 # Tkinter GUI
 # --------------------------
 root = tk.Tk()
-root.title("Flight Schedule Scraper")
+root.title("SkyScraper")
 
 # --- Airport search ---
 search_var = tk.StringVar()
@@ -64,17 +63,21 @@ def run_scrape():
         messagebox.showerror("Error", "Please select an airport.")
         return
 
-    api_key = api_key_var.get()
+    api_key = api_key_var.get().strip()
+    if not api_key:
+        messagebox.showerror("Error", "Please enter your AviationStack API key.")
+        return
+
     mode = mode_var.get()
 
-    airport_doc = airports_col.find_one({"iataCode": airport})
-    timezone_str = airport_doc["timezone"] if airport_doc else "UTC"
+    today = datetime.today()
+    local_date_str = today.strftime("%Y-%m-%d")
+    key = f"{airport}|{local_date_str}"
 
-    local_tz = pytz.timezone(timezone_str)
-    now_local = datetime.now(local_tz)
-    date_str = now_local.strftime("%Y-%m-%d %H:%M")
-
-    key_prefix = f"{airport}|{date_str}"
+    # Disable this block to allow re-scraping same day:
+    # if key in completed:
+    #     messagebox.showerror("Error", f"{airport} for {local_date_str} already scraped.")
+    #     return
 
     success, record_count, actual_mode = scrape_real_flights.scrape(
         airport=airport,
@@ -83,21 +86,10 @@ def run_scrape():
     )
 
     if success:
-        if actual_mode == "Upsert":
-            log_line = f"{key_prefix}|Upserted {record_count} flights"
-        else:
-            log_line = f"{key_prefix}|Saved... {record_count} flights to JSON"
-
         with open("completed_scrapes.txt", "a") as f:
-            f.write(f"{log_line}\n")
-
-        completed.add(log_line)
-        messagebox.showinfo(
-            "Done",
-            f"Scrape complete for {airport}!\n{log_line}"
-        )
-    else:
-        messagebox.showerror("Error", f"Scrape failed for {airport}.")
+            f.write(f"{key} | {record_count} flights [{actual_mode}]\n")
+        completed.add(key)
+        messagebox.showinfo("SkyScraper", f"Scrape complete for {airport} on {local_date_str}!\nFlights saved: {record_count} [{actual_mode}]")
 
 tk.Button(root, text="Run Scrape", command=run_scrape).pack(pady=10)
 
