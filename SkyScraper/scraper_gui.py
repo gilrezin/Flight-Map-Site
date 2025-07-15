@@ -74,11 +74,6 @@ def run_scrape():
     local_date_str = today.strftime("%Y-%m-%d")
     key = f"{airport}|{local_date_str}"
 
-    # Disable this block to allow re-scraping same day:
-    # if key in completed:
-    #     messagebox.showerror("Error", f"{airport} for {local_date_str} already scraped.")
-    #     return
-
     success, record_count, actual_mode = scrape_real_flights.scrape(
         airport=airport,
         api_key=api_key,
