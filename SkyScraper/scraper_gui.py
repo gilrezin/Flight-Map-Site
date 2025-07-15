@@ -63,17 +63,14 @@ def run_scrape():
         messagebox.showerror("Error", "Please select an airport.")
         return
 
-    api_key = api_key_var.get().strip()
+    api_key = api_key_var.get()
     if not api_key:
         messagebox.showerror("Error", "Please enter your AviationStack API key.")
         return
 
     mode = mode_var.get()
 
-    today = datetime.today()
-    local_date_str = today.strftime("%Y-%m-%d")
-    key = f"{airport}|{local_date_str}"
-
+    # Call scrape function
     success, record_count, actual_mode = scrape_real_flights.scrape(
         airport=airport,
         api_key=api_key,
@@ -81,10 +78,11 @@ def run_scrape():
     )
 
     if success:
+        now_local = datetime.now()
+        timestamp_str = now_local.strftime("%Y-%m-%d %H:%M:%S")
         with open("completed_scrapes.txt", "a") as f:
-            f.write(f"{key} | {record_count} flights [{actual_mode}]\n")
-        completed.add(key)
-        messagebox.showinfo("SkyScraper", f"Scrape complete for {airport} on {local_date_str}!\nFlights saved: {record_count} [{actual_mode}]")
+            f.write(f"{airport} | {timestamp_str} | {record_count} flights [{actual_mode}]\n")
+        messagebox.showinfo("Done", f"Scrape complete for {airport}!\n{record_count} flights [{actual_mode}]")
 
 tk.Button(root, text="Run Scrape", command=run_scrape).pack(pady=10)
 
