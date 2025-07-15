@@ -21,9 +21,6 @@ class AutoScraperApp:
         self.api_key_index = 0
         self.airports = []
 
-        self.load_airports()
-        self.load_api_keys()
-
         # === Main UI ===
         top_frame = tk.Frame(root)
         top_frame.pack(fill=tk.X)
@@ -42,9 +39,6 @@ class AutoScraperApp:
         self.airports_listbox = tk.Listbox(airports_frame, width=20)
         self.airports_listbox.pack(fill=tk.BOTH, expand=True)
 
-        for a in self.airports:
-            self.airports_listbox.insert(tk.END, a)
-
         tk.Button(airports_frame, text="Add Airport", command=self.add_airport).pack(fill=tk.X, pady=2)
         tk.Button(airports_frame, text="Remove Selected", command=self.remove_airport).pack(fill=tk.X, pady=2)
 
@@ -56,11 +50,11 @@ class AutoScraperApp:
         self.keys_listbox = tk.Listbox(keys_frame, width=45)
         self.keys_listbox.pack(fill=tk.BOTH, expand=True)
 
-        for k in self.api_keys:
-            self.keys_listbox.insert(tk.END, k)
-
         tk.Button(keys_frame, text="Add API Key", command=self.add_api_key).pack(fill=tk.X, pady=2)
         tk.Button(keys_frame, text="Remove Selected", command=self.remove_api_key).pack(fill=tk.X, pady=2)
+
+        self.load_airports()
+        self.load_api_keys()
 
         self.start_background_loop()
 
@@ -71,6 +65,7 @@ class AutoScraperApp:
                 self.airports = [line.strip().upper() for line in f if line.strip()]
         else:
             self.airports = []
+        self.refresh_airports_listbox()
 
     def load_api_keys(self):
         if os.path.exists(API_KEYS_FILE):
@@ -78,6 +73,7 @@ class AutoScraperApp:
                 self.api_keys = [line.strip() for line in f if line.strip()]
         else:
             self.api_keys = []
+        self.refresh_keys_listbox()
 
     def save_airports(self):
         with open(AIRPORTS_FILE, "w") as f:
@@ -110,7 +106,6 @@ class AutoScraperApp:
     def scrape_sequence(self):
         self.load_airports()
         self.load_api_keys()
-        self.api_key_index = 0
 
         for airport in self.airports:
             success = False
@@ -166,8 +161,7 @@ class AutoScraperApp:
             if code not in self.airports:
                 self.airports.append(code)
                 self.save_airports()
-                self.airports_listbox.insert(tk.END, code)
-
+                self.refresh_airports_listbox()
 
     def remove_airport(self):
         sel = self.airports_listbox.curselection()
@@ -175,7 +169,12 @@ class AutoScraperApp:
             idx = sel[0]
             del self.airports[idx]
             self.save_airports()
-            self.airports_listbox.delete(idx)
+            self.refresh_airports_listbox()
+
+    def refresh_airports_listbox(self):
+        self.airports_listbox.delete(0, tk.END)
+        for a in self.airports:
+            self.airports_listbox.insert(tk.END, a)
 
     # === Manage API Keys ===
     def add_api_key(self):
@@ -183,7 +182,7 @@ class AutoScraperApp:
         if key and key not in self.api_keys:
             self.api_keys.append(key)
             self.save_api_keys()
-            self.keys_listbox.insert(tk.END, key)
+            self.refresh_keys_listbox()
 
     def remove_api_key(self):
         sel = self.keys_listbox.curselection()
@@ -191,7 +190,7 @@ class AutoScraperApp:
             idx = sel[0]
             del self.api_keys[idx]
             self.save_api_keys()
-            self.keys_listbox.delete(idx)
+            self.refresh_keys_listbox()
 
     def refresh_keys_listbox(self):
         self.keys_listbox.delete(0, tk.END)
