@@ -18,7 +18,7 @@ class AutoScraperApp:
         self.root.title("SkyScraper Auto-Upserter")
 
         self.api_keys = []
-        self.api_key_index = 0
+        self.current_api_key_index = 0 
         self.airports = []
 
         # === Main UI ===
@@ -86,21 +86,19 @@ class AutoScraperApp:
                 f.write(f"{k}\n")
 
     # === API key cycle ===
-    def get_next_api_key(self):
+    def get_current_api_key(self):
         if not self.api_keys:
             return None
-        key = self.api_keys[self.api_key_index % len(self.api_keys)]
-        self.api_key_index += 1
-        if self.api_key_index >= len(self.api_keys):
-            self.load_api_keys()
-            self.api_key_index = 0
-        return key
+        return self.api_keys[self.current_api_key_index % len(self.api_keys)]
 
     def remove_bad_key(self, key):
         if key in self.api_keys:
             self.api_keys.remove(key)
             self.save_api_keys()
             self.refresh_keys_listbox()
+            # Move to next key
+            if self.current_api_key_index >= len(self.api_keys):
+                self.current_api_key_index = 0
 
     # === Scraping ===
     def scrape_sequence(self):
@@ -114,7 +112,7 @@ class AutoScraperApp:
                     print("No valid API keys left. Skipping airport.")
                     break
 
-                api_key = self.get_next_api_key()
+                api_key = self.get_current_api_key()
                 print(f"Scraping {airport} with API key ending {api_key[-4:]}")
 
                 result = scrape_real_flights.scrape(airport, api_key, mode="Upsert")
