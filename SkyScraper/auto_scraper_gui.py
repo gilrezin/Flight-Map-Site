@@ -3,7 +3,7 @@
 import tkinter as tk
 from tkinter import simpledialog
 import scrape_real_flights
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time as dt_time
 import time
 import os
 import threading
@@ -18,7 +18,7 @@ class AutoScraperApp:
         self.root.title("SkyScraper Auto-Upserter")
 
         self.api_keys = []
-        self.current_api_key_index = 0 
+        self.api_key_index = 0
         self.airports = []
 
         # === Main UI ===
@@ -85,20 +85,23 @@ class AutoScraperApp:
             for k in self.api_keys:
                 f.write(f"{k}\n")
 
-    # === API key cycle ===
+    # === API key logic ===
     def get_current_api_key(self):
         if not self.api_keys:
             return None
-        return self.api_keys[self.current_api_key_index % len(self.api_keys)]
+        return self.api_keys[self.api_key_index % len(self.api_keys)]
+
+    def move_to_next_api_key(self):
+        if self.api_keys:
+            self.api_key_index = (self.api_key_index + 1) % len(self.api_keys)
 
     def remove_bad_key(self, key):
         if key in self.api_keys:
             self.api_keys.remove(key)
             self.save_api_keys()
             self.refresh_keys_listbox()
-            # Move to next key
-            if self.current_api_key_index >= len(self.api_keys):
-                self.current_api_key_index = 0
+            if self.api_key_index >= len(self.api_keys):
+                self.api_key_index = 0
 
     # === Scraping ===
     def scrape_sequence(self):
@@ -107,6 +110,8 @@ class AutoScraperApp:
 
         for airport in self.airports:
             success = False
+            offset = 0  # Start at 0 for each airport
+
             while not success:
                 if not self.api_keys:
                     print("No valid API keys left. Skipping airport.")
@@ -115,38 +120,56 @@ class AutoScraperApp:
                 api_key = self.get_current_api_key()
                 print(f"Scraping {airport} with API key ending {api_key[-4:]}")
 
-                result = scrape_real_flights.scrape(airport, api_key, mode="Upsert")
+                result = scrape_real_flights.scrape(airport, api_key, mode="Upsert", offset=offset)
 
                 if isinstance(result, tuple) and result[0] is True:
-                    _, count, mode_used = result
+                    _, count, mode_used, returned_offset = result
                     local_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     log_line = f"{airport} | {local_now} | {count} flights [Auto-Upsert]\n"
                     with open(AUTO_LOG_FILE, "a") as f:
                         f.write(log_line)
                     print(f"Upsert complete for {airport} with {count} flights.")
                     success = True
+                    offset = 0  # Reset for next airport
                 else:
+                    _, _, _, returned_offset = result
                     print("Key failed. Removing key and retrying same airport.")
                     self.remove_bad_key(api_key)
+                    self.move_to_next_api_key()
+                    offset = returned_offset  # Retry with same offset
 
     def manual_scrape(self):
         threading.Thread(target=self.scrape_sequence).start()
 
     # === Scheduler ===
-    def wait_until_next_half_hour(self):
+    def wait_until_next_scrape(self):
+        # PDT scrape schedule: 02:00, 06:00, 10:00, 14:00, 18:00, 22:00
+        scrape_times = [
+            dt_time(2, 0), dt_time(6, 0), dt_time(10, 0),
+            dt_time(14, 0), dt_time(18, 0), dt_time(22, 0)
+        ]
         now = datetime.now()
-        if now.minute < 30:
-            next_run = now.replace(minute=30, second=0, microsecond=0)
-        else:
-            next_run = (now + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+        next_run = None
+
+        for t in scrape_times:
+            candidate = now.replace(hour=t.hour, minute=t.minute, second=0, microsecond=0)
+            if candidate > now:
+                next_run = candidate
+                break
+
+        if not next_run:
+            # All times passed today, schedule first for tomorrow
+            first_time = scrape_times[0]
+            next_run = (now + timedelta(days=1)).replace(hour=first_time.hour, minute=first_time.minute, second=0, microsecond=0)
+
         wait_seconds = (next_run - now).total_seconds()
-        print(f"Next auto scrape scheduled for: {next_run.strftime('%H:%M:%S')}")
+        print(f"Next auto scrape scheduled for: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
         time.sleep(wait_seconds)
 
     def start_background_loop(self):
         def loop():
             while True:
-                self.wait_until_next_half_hour()
+                self.wait_until_next_scrape()
                 print("Starting scheduled auto scrape sequence...")
                 self.scrape_sequence()
         threading.Thread(target=loop, daemon=True).start()

@@ -74,12 +74,14 @@ def run_scrape():
         return
 
     mode = mode_var.get()
+    offset = 0  # Always start at offset 0 for GUI
 
     # Call scrape function
-    success, record_count, actual_mode = scrape_real_flights.scrape(
+    success, record_count, actual_mode, _ = scrape_real_flights.scrape(
         airport=airport,
         api_key=api_key,
-        mode=mode
+        mode=mode,
+        offset=offset  # Pass offset
     )
 
     if success:
