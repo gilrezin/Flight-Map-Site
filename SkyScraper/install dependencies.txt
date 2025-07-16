@@ -1,0 +1,5 @@
+pip install pymongo python-dotenv python-dateutil pytz requests
+
+or
+
+pip3 install pymongo python-dotenv python-dateutil pytz requests
