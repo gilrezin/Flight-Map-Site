@@ -4,27 +4,32 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from pymongo import MongoClient
 from datetime import datetime
-import scrape_real_flights
+from dotenv import load_dotenv
 import os
 
-# --------------------------
-# MongoDB connection
-# --------------------------
-client = MongoClient("mongodb+srv://bbmcclosky:LtpCIzRMDjxIZuv3@mernapp.2okngfv.mongodb.net/flightmap")
+import scrape_real_flights
+
+# --------------------------------
+# Load .env and MongoDB connection
+# --------------------------------
+load_dotenv()
+MONGO_URI = os.getenv("MONGODB_URI")
+
+client = MongoClient(MONGO_URI)
 airports_col = client["flightmap"]["airports"]
 
-# --------------------------
+# --------------------------------
 # Load completed scrapes log
-# --------------------------
+# --------------------------------
 completed = set()
 if os.path.exists("completed_scrapes.txt"):
     with open("completed_scrapes.txt") as f:
         for line in f:
             completed.add(line.strip())
 
-# --------------------------
+# --------------------------------
 # Tkinter GUI
-# --------------------------
+# --------------------------------
 root = tk.Tk()
 root.title("SkyScraper")
 

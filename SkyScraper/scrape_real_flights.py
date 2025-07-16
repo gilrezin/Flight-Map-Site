@@ -6,19 +6,24 @@ from pymongo import MongoClient
 from datetime import datetime
 import pytz
 from dateutil import parser
+from dotenv import load_dotenv
+import os
 
-# --------------------------
-# MongoDB connection
-# --------------------------
-client = MongoClient("mongodb+srv://bbmcclosky:LtpCIzRMDjxIZuv3@mernapp.2okngfv.mongodb.net/flightmap")
+# --------------------------------
+# Load .env and MongoDB connection
+# --------------------------------
+load_dotenv()
+MONGO_URI = os.getenv("MONGODB_URI")
+
+client = MongoClient(MONGO_URI)
 flights_col = client["flightmap"]["flights"]
 airports_col = client["flightmap"]["airports"]
 
 def scrape(airport, api_key, mode="Upsert"):
     try:
-        # --------------------------
+        # ------------------------
         # Build API request
-        # --------------------------
+        # ------------------------
         url = "http://api.aviationstack.com/v1/flights"
         params = {
             "access_key": api_key,
