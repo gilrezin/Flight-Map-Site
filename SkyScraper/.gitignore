@@ -1,0 +1,39 @@
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+
+# Coverage directories
+coverage/
+.nyc_output/
+
+# Grunt
+.grunt/
+
+# node-waf
+.lock-wscript
+
+# Compiled binary addons
+build/Release/
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Environment variables
+.env
+
+# OS files
+.DS_Store
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# REPL history
+.node_repl_history
