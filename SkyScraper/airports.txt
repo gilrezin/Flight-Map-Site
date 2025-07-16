@@ -1,2 +1,8 @@
 GEG
 SEA
+LAX
+JFK
+SFO
+DCA
+DFW
+ORD
