@@ -113,7 +113,8 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
                     "arrivalTime": arr_time_local_str,
                     "airline": airline_name,
                     "flightNumber": flight_number,
-                    "dayOfWeek": local_day_of_week
+                    "dayOfWeek": local_day_of_week,
+                    "departureTimeOfDay": dt.strftime("%H:%M")
                 }
 
                 records.append(record)
