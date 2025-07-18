@@ -97,7 +97,8 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
                     airline_name = airline.get("name")
                     flight_number = flight.get("number")
 
-                if not (dep_airport_name and arr_airport_name and dep_time_local_str and arr_time_local_str):
+                # Skip if essential fields are missing
+                if not (dep_airport_name and arr_airport_name and dep_time_local_str and arr_time_local_str and flight_number):
                     continue
 
                 # Normalize airline name if matched and not cargo
@@ -111,8 +112,11 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
                             normalized = ref
                             break
 
-                if normalized:
-                    airline_name = normalized
+                # Skip flights not associated with an approved commercial airline
+                if not normalized:
+                    continue
+
+                airline_name = normalized
 
                 record = {
                     "departureAirport": {
