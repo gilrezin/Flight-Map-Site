@@ -100,6 +100,20 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
                 if not (dep_airport_name and arr_airport_name and dep_time_local_str and arr_time_local_str):
                     continue
 
+                # Normalize airline name if matched and not cargo
+                airline_name_clean = airline_name.strip().lower() if airline_name else ""
+                normalized = None
+
+                if "cargo" not in airline_name_clean:
+                    for doc in client["flightmap"]["airlines"].find():
+                        ref = doc["name"]
+                        if ref.lower() in airline_name_clean:
+                            normalized = ref
+                            break
+
+                if normalized:
+                    airline_name = normalized
+
                 record = {
                     "departureAirport": {
                         "name": dep_airport_name,
