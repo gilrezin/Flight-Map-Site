@@ -183,4 +183,30 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
 
     except Exception as e:
         print(f"Error: {e}")
-        return False, 0, mode, offset  # Return offset so GUI can retry properly
+        if records:
+            print(f"Attempting to upsert {len(records)} records collected before the error...")
+            # Deduplicate before upsert
+            unique = {}
+            for rec in records:
+                key = (
+                    rec["departureAirport"]["iataCode"],
+                    rec["arrivalAirport"]["iataCode"],
+                    rec["departureTime"],
+                    rec["dayOfWeek"]
+                )
+                unique[key] = rec
+            records = list(unique.values())
+
+            for rec in records:
+                flights_col.update_one(
+                    {
+                        "departureAirport.iataCode": rec["departureAirport"]["iataCode"],
+                        "arrivalAirport.iataCode": rec["arrivalAirport"]["iataCode"],
+                        "departureTime": rec["departureTime"],
+                        "dayOfWeek": rec["dayOfWeek"]
+                    },
+                    {"$set": rec},
+                    upsert=True
+                )
+            print(f"Upserted {len(records)} flights before error.")
+        return False, len(records), mode, offset  # Return offset so GUI can retry properly
