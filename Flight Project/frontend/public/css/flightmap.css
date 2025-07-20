@@ -1,0 +1,33 @@
+
+/* FlightMap Custom Styles */
+.flight-price {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.duration {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.navbar-brand {
+    font-weight: bold;
+    color: #007bff !important;
+}
+
+.card {
+    border-radius: 15px;
+    border: none;
+    max-width: 90%;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s;
+}
+
+.btn:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s;
+}
