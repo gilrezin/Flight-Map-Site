@@ -171,3 +171,5 @@ class MapController {
         setTimeout(() => errorDiv.remove(), 5000);
     }
 }
+
+module.exports = MapController;
