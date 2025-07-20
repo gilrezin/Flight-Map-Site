@@ -67,11 +67,13 @@ app.get('/search', async (req, res) => {
       
       if (arrival) query['arrivalAirport.iataCode'] = arrival.toUpperCase();
       if (airline && airline !== '') query.airline = airline;
+      
+      // Handle date search for weekly recurring flights
       if (date) {
         const searchDate = new Date(date);
-        const nextDay = new Date(searchDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        query.departureTime = { $gte: searchDate, $lt: nextDay };
+        const dayOfWeek = searchDate.toLocaleDateString('en-US', { weekday: 'long' });
+        query.dayOfWeek = dayOfWeek;
+        console.log(`Searching for flights on ${dayOfWeek} (${date})`);
       }
       
       results = await db.collection('flights')
@@ -154,11 +156,13 @@ app.get('/api/flights', async (req, res) => {
     
     if (arrival) query['arrivalAirport.iataCode'] = arrival.toUpperCase();
     if (airline && airline !== '') query.airline = airline;
+    
+    // Handle date search for weekly recurring flights
     if (date) {
       const searchDate = new Date(date);
-      const nextDay = new Date(searchDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      query.departureTime = { $gte: searchDate, $lt: nextDay };
+      const dayOfWeek = searchDate.toLocaleDateString('en-US', { weekday: 'long' });
+      query.dayOfWeek = dayOfWeek;
+      console.log(`API: Searching for flights on ${dayOfWeek} (${date})`);
     }
     
     const flights = await db.collection('flights')
@@ -167,6 +171,7 @@ app.get('/api/flights', async (req, res) => {
       .limit(parseInt(limit))
       .toArray();
     
+    console.log(`API: Found ${flights.length} flights matching criteria`);
     res.json(flights);
   } catch (error) {
     console.error('Flight search error:', error);
