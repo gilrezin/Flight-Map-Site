@@ -8,18 +8,10 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="flightmap.css" rel="stylesheet">
     <style>
-        #map { height: 70vh; width: 100%; }
+        #map { height: 93vh; width: 100%; }
         .search-container { position: relative; z-index: 1000; background: rgba(255,255,255,0.95); }
         
-        /* Custom marker styles */
-        .airport-marker {
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
         
-        .airport-marker:hover {
-            transform: scale(1.2);
-        }
         
         /* Legend styles */
         .map-legend {
@@ -139,6 +131,7 @@
     <script>
         // Initialize the map
         const map = L.map('map').setView([39.8283, -98.5795], 4); // Center on USA
+		const focusAirports = ["GEG", "SEA", "LAX", "JFK", "SFO", "DCA", "DFW", "ORD"]
 
         // Add tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -191,7 +184,7 @@
                     
                     // Create marker with smaller default size for better performance
                     const marker = L.circleMarker([lat, lng], {
-                        radius: 4,
+                        radius: airportMarkerSize(airport),
                         fillColor: '#007bff',
                         color: '#fff',
                         weight: 1,
@@ -348,7 +341,7 @@
         function resetMapMarkers() {
             allAirportMarkers.forEach(marker => {
                 marker.setStyle({
-                    radius: 4,
+                    radius: airportMarkerSize(marker.airportData),
                     fillColor: '#007bff',
                     color: '#fff',
                     weight: 1,
@@ -360,6 +353,15 @@
             const formStatus = document.getElementById('form-status');
             if (formStatus) {
                 formStatus.innerHTML = '';
+            }
+        }
+
+        function airportMarkerSize(airport) {
+            // Determine marker size based on airport type or focus
+            if (focusAirports.includes(airport.iataCode)) {
+                return 10; // Larger for focus airports
+            } else {
+                return 4; // Default size for other airports
             }
         }
 
