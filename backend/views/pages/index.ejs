@@ -142,6 +142,7 @@
         // Initialize the map
         const map = L.map('map').setView([39.8283, -98.5795], 4); // Center on USA
 		const focusAirports = ["GEG", "SEA", "LAX", "JFK", "SFO", "DCA", "DFW", "ORD"]
+        let departureAirportSelected = false;
 
         // Add tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -209,20 +210,20 @@
                     validAirports++;
                     
                     // Enhanced popup with better styling
-                    marker.bindPopup(`
-                        <div style="text-align: center; min-width: 200px;">
-                            <h6 style="margin: 0 0 8px 0; color: #007bff;">${airport.iataCode}</h6>
-                            <div style="font-weight: bold; margin-bottom: 5px;">${airport.name}</div>
-                            <div style="color: #666; margin-bottom: 8px;">${airport.city}, ${airport.country}</div>
-                            <button onclick="selectAirport('${airport.iataCode}')" 
-                                    style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;">
-                                Select as Departure ✈️
-                            </button>
-                        </div>
-                    `, {
-                        maxWidth: 250,
-                        className: 'custom-popup'
-                    });
+                    // marker.bindPopup(`
+                    //     <div style="text-align: center; min-width: 200px;">
+                    //         <h6 style="margin: 0 0 8px 0; color: #007bff;">${airport.iataCode}</h6>
+                    //         <div style="font-weight: bold; margin-bottom: 5px;">${airport.name}</div>
+                    //         <div style="color: #666; margin-bottom: 8px;">${airport.city}, ${airport.country}</div>
+                    //         <button onclick="selectAirport('${airport.iataCode}')" 
+                    //                 style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;">
+                    //             Select as Departure ✈️
+                    //         </button>
+                    //     </div>
+                    // `, {
+                    //     maxWidth: 250,
+                    //     className: 'custom-popup'
+                    // });
                     
                     // Click to set as departure
                     marker.on('click', function(e) {
@@ -264,9 +265,21 @@
 
         // Function to select an airport (can be called from popup buttons)
         window.selectAirport = function(iataCode) {
-            console.log(`Selected airport: ${iataCode}`);
-            document.querySelector('input[name="departure"]').value = iataCode;
-            showDestinations(iataCode);
+            // when the arrival airport is selected, go to the search page
+            if (departureAirportSelected) {
+                departureAirportSelected = false;
+                console.log(`Arrival airport selected: ${iataCode}`);
+                document.querySelector('input[name="arrival"]').value = iataCode;
+                const form = document.querySelector('form');
+                form.submit();
+            }
+            else {
+                departureAirportSelected = true;
+                console.log(`Selected airport: ${iataCode}`);
+                document.querySelector('input[name="departure"]').value = iataCode;
+                showDestinations(iataCode);
+            }
+            
         }
 
         // Show available destinations from selected departure
@@ -349,6 +362,7 @@
 
         // Reset map markers to default state
         function resetMapMarkers() {
+            departureAirportSelected = false;
             allAirportMarkers.forEach(marker => {
                 marker.setStyle({
                     radius: airportMarkerSize(marker.airportData),
