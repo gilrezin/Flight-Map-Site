@@ -72,6 +72,14 @@
                     </select>
                 </div>
 
+                <div class="flex-column align-items-start me-2">
+                    <input type="range" min="0" max="24" step="1" aria-label="Starting hour" value="0" name="fromHour">
+                    <p class="small mb-0">0:00 - - - - - - ☀️ - - - - - - 23:59</p>
+                    <div class="flex-column align-items-start me-2">
+                        <input type="range" min="0" max="24" step="1" aria-label="Ending hour" value="24" name="toHour">
+                    </div>
+                </div>
+
                 <button class="btn btn-primary" type="submit">Search</button>
             </form>
         </div>
@@ -137,7 +145,7 @@
                                         <strong>Arrival:</strong> <%= new Date(flight.arrivalTime).toLocaleString() %>
                                     </div>
                                 </div>
-                            </div>
+                            </div>                            
                         </div>
                     <% }); %>
                 <% } %>

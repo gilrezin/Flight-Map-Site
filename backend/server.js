@@ -56,7 +56,8 @@ app.get('/', async (req, res) => {
 app.get('/search', async (req, res) => {
   try {
     const db = mongoose.connection.db;
-    const { departure, arrival, date, airline, maxPrice } = req.query;
+    console.log('Search parameters:', req.query);
+    const { departure, arrival, date, airline, fromHour, toHour } = req.query;
     
     // Build search query if parameters provided
     let results = [];
@@ -82,6 +83,16 @@ app.get('/search', async (req, res) => {
         .limit(50)
         .toArray();
     }
+
+    // Filter results by time if fromHour and toHour provided
+    for (i = 0; i < results.length; i++) {
+      const date = new Date(results[i].departureTime);
+      const hours = date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+      if (hours < fromHour || hours > toHour) {
+        results.splice(i, 1);
+        i--;
+      }
+    }
     
     // Get airlines for dropdown
     const airlines = await db.collection('flights').aggregate([
@@ -94,7 +105,7 @@ app.get('/search', async (req, res) => {
       title: 'FlightMap Search',
       results: results,
       airlines: airlines,
-      searchParams: { departure, arrival, date, airline, maxPrice }
+      searchParams: { departure, arrival, date, airline, fromHour, toHour }
     });
   } catch (error) {
     console.error('Error in search:', error);
