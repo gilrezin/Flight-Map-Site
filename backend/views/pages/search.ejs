@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlightMap Search Results</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="flightmap.css" rel="stylesheet">
+    <style>
+        .flight-card {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .route-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .airport-code {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .flight-details {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .no-results {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">FlightMap</a>
+            
+            <form class="d-flex w-100" action="/search" method="GET">
+                <div class="d-flex me-2">
+                    <label class="nav-item me-2 mt-2">From:</label>
+                    <input name="departure" class="form-control me-2" type="text" 
+                           value="<%= searchParams.departure || '' %>" placeholder="SEA" required style="width: 80px;">
+                </div>
+
+                <div class="d-flex me-2">
+                    <label class="nav-item me-2 mt-2">To:</label>
+                    <input name="arrival" class="form-control me-2" type="text" 
+                           value="<%= searchParams.arrival || '' %>" placeholder="LAX" style="width: 80px;">
+                </div>
+
+                <div class="d-flex me-2">
+                    <label class="nav-item me-2 mt-2">Date:</label>
+                    <input name="date" class="form-control me-2" type="date" 
+                           value="<%= searchParams.date || '' %>">
+                </div>
+
+                <div class="d-flex me-2">
+                    <label class="nav-item me-2 mt-2">Airline:</label>
+                    <select name="airline" class="form-select me-2" style="width: 150px;">
+                        <option value="">All Airlines</option>
+                        <% airlines.forEach(airline => { %>
+                            <option value="<%= airline.name %>" 
+                                    <%= searchParams.airline === airline.name ? 'selected' : '' %>>
+                                <%= airline.name %>
+                            </option>
+                        <% }) %>
+                    </select>
+                </div>
+
+                <button class="btn btn-primary" type="submit">Search</button>
+            </form>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h4 class="mb-4">
+            <% if (searchParams.departure) { %>
+                Search Results: <%= results.length %> flights found
+                <% if (searchParams.departure && searchParams.arrival) { %>
+                    from <%= searchParams.departure %> to <%= searchParams.arrival %>
+                <% } else if (searchParams.departure) { %>
+                    from <%= searchParams.departure %>
+                <% } %>
+            <% } else { %>
+                Enter a departure airport to search for flights
+            <% } %>
+        </h4>
+
+        <div class="row">
+            <div class="col-md-12">
+                <% if (results.length === 0 && searchParams.departure) { %>
+                    <div class="no-results">
+                        <h5>No flights found</h5>
+                        <p>Try adjusting your search criteria or selecting a different route.</p>
+                    </div>
+                <% } else if (results.length > 0) { %>
+                    <% results.forEach(function(flight) { %>
+                        <div class="flight-card">
+                            <div class="route-info">
+                                <div>
+                                    <span class="airport-code"><%= flight.departureAirport.iataCode %></span>
+                                    <span class="mx-2">→</span>
+                                    <span class="airport-code"><%= flight.arrivalAirport.iataCode %></span>
+                                </div>
+                                <div class="text-end">
+                                    <button class="btn btn-outline-primary btn-sm" 
+                                            onclick="bookFlight('<%= flight.departureAirport.iataCode %>', '<%= flight.arrivalAirport.iataCode %>', '<%= flight.departureTime %>')">
+                                        View on Kayak
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <div class="flight-details">
+                                        <strong>From:</strong> <%= flight.departureAirport.name %><br>
+                                        <strong>To:</strong> <%= flight.arrivalAirport.name %>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="flight-details">
+                                        <strong>Flight:</strong> <%= flight.airline %> <%= flight.flightNumber %><br>
+                                        <strong>Departure:</strong> <%= new Date(flight.departureTime).toLocaleString() %><br>
+                                        <strong>Arrival:</strong> <%= new Date(flight.arrivalTime).toLocaleString() %>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        function bookFlight(departure, arrival, departureTime) {
+            // Format date for Kayak URL
+            const date = new Date(departureTime).toISOString().split('T')[0];
+            const kayakUrl = `https://www.kayak.com/flights/${departure}-${arrival}/${date}`;
+            window.open(kayakUrl, '_blank');
+        }
+
+        // Auto-submit form when departure is entered via map click
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('auto') === 'true') {
+            // This was triggered by map interaction
+            console.log('Auto-search triggered from map');
+        }
+    </script>
+</body>
+</html>
