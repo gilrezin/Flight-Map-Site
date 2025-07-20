@@ -97,8 +97,26 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
                     airline_name = airline.get("name")
                     flight_number = flight.get("number")
 
-                if not (dep_airport_name and arr_airport_name and dep_time_local_str and arr_time_local_str):
+                # Skip if essential fields are missing
+                if not (dep_airport_name and arr_airport_name and dep_time_local_str and arr_time_local_str and flight_number):
                     continue
+
+                # Normalize airline name if matched and not cargo
+                airline_name_clean = airline_name.strip().lower() if airline_name else ""
+                normalized = None
+
+                if "cargo" not in airline_name_clean:
+                    for doc in client["flightmap"]["airlines"].find():
+                        ref = doc["name"]
+                        if ref.lower() in airline_name_clean:
+                            normalized = ref
+                            break
+
+                # Skip flights not associated with an approved commercial airline
+                if not normalized:
+                    continue
+
+                airline_name = normalized
 
                 record = {
                     "departureAirport": {
@@ -165,4 +183,30 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
 
     except Exception as e:
         print(f"Error: {e}")
-        return False, 0, mode, offset  # Return offset so GUI can retry properly
+        if records:
+            print(f"Attempting to upsert {len(records)} records collected before the error...")
+            # Deduplicate before upsert
+            unique = {}
+            for rec in records:
+                key = (
+                    rec["departureAirport"]["iataCode"],
+                    rec["arrivalAirport"]["iataCode"],
+                    rec["departureTime"],
+                    rec["dayOfWeek"]
+                )
+                unique[key] = rec
+            records = list(unique.values())
+
+            for rec in records:
+                flights_col.update_one(
+                    {
+                        "departureAirport.iataCode": rec["departureAirport"]["iataCode"],
+                        "arrivalAirport.iataCode": rec["arrivalAirport"]["iataCode"],
+                        "departureTime": rec["departureTime"],
+                        "dayOfWeek": rec["dayOfWeek"]
+                    },
+                    {"$set": rec},
+                    upsert=True
+                )
+            print(f"Upserted {len(records)} flights before error.")
+        return False, len(records), mode, offset  # Return offset so GUI can retry properly
