@@ -130,6 +130,30 @@ app.get("/search", async (req, res) => {
 });
 
 // ====================
+// ADMIN EJS ROUTES
+// ====================
+
+// GET: Admin Login Page
+app.get("/admin/login", (req, res) => {
+  if (req.session.admin) return res.redirect("/admin/dashboard");
+  res.render("admin/login");
+});
+
+// GET: Admin Dashboard Page
+app.get("/admin/dashboard", (req, res) => {
+  if (!req.session.admin) return res.redirect("/admin/login");
+  res.render("admin/dashboard");
+});
+
+// POST: Admin Logout
+app.post("/admin/logout", (req, res) => {
+  req.session.destroy(() => {
+    res.redirect("/admin/login");
+  });
+});
+
+
+// ====================
 // API ROUTES
 // ====================
 
