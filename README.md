@@ -67,7 +67,7 @@ Users can access our Flight Map Site at `https://flight-map-site.onrender.com/`
 │   ├── .env                 # Environment variables
 │   ├── package.json         # Backend dependencies
 │   ├── package-lock.json
-│   └─── server.js            # Main server file
+│   └── server.js            # Main server file
 │    
 └── frontend/
     ├── public/
