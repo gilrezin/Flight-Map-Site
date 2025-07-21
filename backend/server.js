@@ -11,12 +11,12 @@ const adminRoutes = require("./routes/admin");
 
 const app = express();
 
-// EJS Setup (for user-facing pages + admin)
+// EJS Setup (for user-facing pages only)
 app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
+app.set("views", path.join(__dirname, "../frontend/views"));
 
 // Static files
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "../frontend/public")));
 
 // Connect to MongoDB
 connectDB();
@@ -72,6 +72,7 @@ app.get("/search", async (req, res) => {
     console.log('Search parameters:', req.query);
     const { departure, arrival, date, airline, fromHour, toHour } = req.query;
     
+    // Build search query if parameters provided
     let results = [];
 
     if (departure) {
@@ -94,6 +95,7 @@ app.get("/search", async (req, res) => {
         .toArray();
     }
 
+    // Filter results by time if fromHour and toHour provided
     for (i = 0; i < results.length; i++) {
       const date = new Date(results[i].departureTime);
       const hours = date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
@@ -103,6 +105,7 @@ app.get("/search", async (req, res) => {
       }
     }
     
+    // Get airlines for dropdown
     const airlines = await db.collection('flights').aggregate([
       { $group: { _id: '$airline', name: { $first: '$airline' } } },
       { $project: { name: '$name' } },
@@ -111,8 +114,8 @@ app.get("/search", async (req, res) => {
     
     res.render('pages/search', {
       title: 'FlightMap Search',
-      results,
-      airlines,
+      results: results,
+      airlines: airlines,
       searchParams: { departure, arrival, date, airline, fromHour, toHour }
     });
   } catch (error) {
@@ -126,14 +129,14 @@ app.get("/search", async (req, res) => {
   }
 });
 
-// Admin web pages + API
-app.use("/admin", adminRoutes);
-app.use("/api/admin", adminRoutes);
-
 // ====================
 // API ROUTES
 // ====================
 
+// Mount new admin routes (login, logout, upload, summary, etc.)
+app.use("/api/admin", adminRoutes);
+
+// Flights API
 app.get("/api/flights", async (req, res) => {
   try {
     const { departure, arrival, date, airline, limit = 50 } = req.query;
@@ -167,6 +170,7 @@ app.get("/api/flights", async (req, res) => {
   }
 });
 
+// Airports API
 app.get("/api/airports", async (req, res) => {
   try {
     const { search, limit = 5000 } = req.query;
@@ -212,6 +216,7 @@ app.get("/api/airports", async (req, res) => {
   }
 });
 
+// Airlines API
 app.get("/api/airlines", async (req, res) => {
   try {
     const db = mongoose.connection.db;
@@ -231,6 +236,7 @@ app.get("/api/airlines", async (req, res) => {
   }
 });
 
+// Destinations API
 app.get("/api/destinations/:iataCode", async (req, res) => {
   try {
     const code = req.params.iataCode.toUpperCase();
@@ -257,6 +263,7 @@ app.get("/api/destinations/:iataCode", async (req, res) => {
   }
 });
 
+// Test route
 app.get("/api/test", (req, res) => {
   res.json({
     message: "Backend connected!",
@@ -270,5 +277,7 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Homepage: http://localhost:${PORT}`);
   console.log(`Search: http://localhost:${PORT}/search`);
-  console.log(`Admin: http://localhost:${PORT}/admin`);
+  console.log(`API: http://localhost:${PORT}/api/test`);
 });
+
+module.exports = app;

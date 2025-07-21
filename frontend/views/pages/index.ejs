@@ -62,22 +62,22 @@
             
             <form class="d-flex w-100" action="/search" method="GET">
                 <div class="d-flex me-2">
-                    <label class="nav-item me-2 mt-2">From:</label>
+                    <label class="nav-item me-2 mt-4">From:</label>
                     <input name="departure" class="form-control me-2" type="text" placeholder="SEA" required style="width: 80px;">
                 </div>
 
                 <div class="d-flex me-2">
-                    <label class="nav-item me-2 mt-2">To:</label>
+                    <label class="nav-item me-2 mt-4">To:</label>
                     <input name="arrival" class="form-control me-2" type="text" placeholder="LAX" style="width: 80px;">
                 </div>
 
                 <div class="d-flex me-2">
-                    <label class="nav-item me-2 mt-2">Date:</label>
+                    <label class="nav-item me-2 mt-4">Date:</label>
                     <input name="date" class="form-control me-2" type="date">
                 </div>
 
                 <div class="d-flex me-2">
-                    <label class="nav-item me-2 mt-2">Airline:</label>
+                    <label class="nav-item me-2 mt-4">Airline:</label>
                     <select name="airline" class="form-select me-2" style="width: 150px;">
                         <option value="">All Airlines</option>
                         <% airlines.forEach(airline => { %>
@@ -98,7 +98,7 @@
                 <button class="btn btn-secondary ms-2" type="button" onclick="resetMapMarkers()">Reset Map</button>
             </form>
 
-            <a href="/admin" class="btn btn-primary">Admin Login</a>
+            <a href="/admin/dashboard" class="btn btn-primary">Admin Login</a>
         </div>
     </nav>
 
@@ -142,6 +142,7 @@
         // Initialize the map
         const map = L.map('map').setView([39.8283, -98.5795], 4); // Center on USA
 		const focusAirports = ["GEG", "SEA", "LAX", "JFK", "SFO", "DCA", "DFW", "ORD"]
+        let departureAirportSelected = false;
 
         // Add tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -214,10 +215,6 @@
                             <h6 style="margin: 0 0 8px 0; color: #007bff;">${airport.iataCode}</h6>
                             <div style="font-weight: bold; margin-bottom: 5px;">${airport.name}</div>
                             <div style="color: #666; margin-bottom: 8px;">${airport.city}, ${airport.country}</div>
-                            <button onclick="selectAirport('${airport.iataCode}')" 
-                                    style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em;">
-                                Select as Departure ✈️
-                            </button>
                         </div>
                     `, {
                         maxWidth: 250,
@@ -264,9 +261,21 @@
 
         // Function to select an airport (can be called from popup buttons)
         window.selectAirport = function(iataCode) {
-            console.log(`Selected airport: ${iataCode}`);
-            document.querySelector('input[name="departure"]').value = iataCode;
-            showDestinations(iataCode);
+            // when the arrival airport is selected, go to the search page
+            if (departureAirportSelected) {
+                departureAirportSelected = false;
+                console.log(`Arrival airport selected: ${iataCode}`);
+                document.querySelector('input[name="arrival"]').value = iataCode;
+                const form = document.querySelector('form');
+                form.submit();
+            }
+            else {
+                departureAirportSelected = true;
+                console.log(`Selected airport: ${iataCode}`);
+                document.querySelector('input[name="departure"]').value = iataCode;
+                showDestinations(iataCode);
+            }
+            
         }
 
         // Show available destinations from selected departure
@@ -349,6 +358,7 @@
 
         // Reset map markers to default state
         function resetMapMarkers() {
+            departureAirportSelected = false;
             allAirportMarkers.forEach(marker => {
                 marker.setStyle({
                     radius: airportMarkerSize(marker.airportData),

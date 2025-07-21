@@ -41,9 +41,9 @@ class LoginController {
         // Redirect based on user role
         setTimeout(() => {
             if (result.user.role === 'admin') {
-                window.location.href = '/admin-dashboard.html';
+                window.location.href = '/flight_admin_dashboard.ejs';
             } else {
-                window.location.href = '/index.html';
+                window.location.href = '/index.ejs';
             }
         }, 1500);
     }
