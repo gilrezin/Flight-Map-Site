@@ -9,13 +9,17 @@ from dateutil import parser
 from dotenv import load_dotenv
 import os
 
+# --------------------------------
 # Load .env and MongoDB connection
+# --------------------------------
 load_dotenv()
 MONGO_URI = os.getenv("MONGODB_URI")
+
+print(f"MONGO_URI = {MONGO_URI}")
+
 client = MongoClient(MONGO_URI)
 flights_col = client["flightmap"]["flights"]
 airports_col = client["flightmap"]["airports"]
-airlines_col = client["flightmap"]["airlines"]
 
 def scrape(airport, api_key, mode="Upsert", offset=0):
     try:
@@ -81,8 +85,10 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
                 if dep_time_local_str:
                     dt = parser.isoparse(dep_time_local_str)
                     local_day_of_week = dt.strftime("%A")
+                    dep_time_of_day = dt.strftime("%H:%M")
                 else:
                     local_day_of_week = None
+                    dep_time_of_day = None
 
                 codeshared = flight.get("codeshared")
                 if codeshared:
@@ -99,7 +105,7 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
                 normalized = None
 
                 if "cargo" not in airline_name_clean:
-                    for doc in airlines_col.find():
+                    for doc in client["flightmap"]["airlines"].find():
                         ref = doc["name"]
                         if ref.lower() in airline_name_clean:
                             normalized = ref
@@ -124,7 +130,7 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
                     "airline": airline_name,
                     "flightNumber": flight_number,
                     "dayOfWeek": local_day_of_week,
-                    "departureTimeOfDay": dt.strftime("%H:%M")
+                    "departureTimeOfDay": dep_time_of_day
                 }
 
                 records.append(record)
@@ -138,13 +144,12 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
             print("No valid flight data returned.")
             return False, 0, mode, offset
 
-        # Deduplicate
         unique = {}
         for rec in records:
             key = (
                 rec["departureAirport"]["iataCode"],
                 rec["arrivalAirport"]["iataCode"],
-                rec["departureTime"],
+                rec["departureTimeOfDay"],
                 rec["dayOfWeek"]
             )
             unique[key] = rec
@@ -152,16 +157,19 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
 
         if mode == "Upsert":
             for rec in records:
-                flights_col.update_one(
-                    {
-                        "departureAirport.iataCode": rec["departureAirport"]["iataCode"],
-                        "arrivalAirport.iataCode": rec["arrivalAirport"]["iataCode"],
-                        "departureTime": rec["departureTime"],
-                        "dayOfWeek": rec["dayOfWeek"]
-                    },
-                    {"$set": rec},
-                    upsert=True
-                )
+                try:
+                    flights_col.update_one(
+                        {
+                            "departureAirport.iataCode": rec["departureAirport"]["iataCode"],
+                            "arrivalAirport.iataCode": rec["arrivalAirport"]["iataCode"],
+                            "departureTimeOfDay": rec["departureTimeOfDay"],
+                            "dayOfWeek": rec["dayOfWeek"]
+                        },
+                        {"$set": rec},
+                        upsert=True
+                    )
+                except Exception as e:
+                    print(f"Upsert error for record: {rec} -> {e}")
             print(f"Upserted {len(records)} flights.")
         else:
             filename = f"{airport}_{datetime.utcnow().date()}.json"
@@ -169,7 +177,7 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
                 json.dump(records, f, indent=2)
             print(f"Saved {len(records)} records to {filename}")
 
-        print(f"Total API requests made for {airport}: {int(offset / limit) + 1}")
+        print(f"Total API requests made for {airport}: {int(offset/limit) + 1}")
         return True, len(records), mode, offset
 
     except Exception as e:
@@ -181,22 +189,25 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
                 key = (
                     rec["departureAirport"]["iataCode"],
                     rec["arrivalAirport"]["iataCode"],
-                    rec["departureTime"],
+                    rec["departureTimeOfDay"],
                     rec["dayOfWeek"]
                 )
                 unique[key] = rec
             records = list(unique.values())
 
             for rec in records:
-                flights_col.update_one(
-                    {
-                        "departureAirport.iataCode": rec["departureAirport"]["iataCode"],
-                        "arrivalAirport.iataCode": rec["arrivalAirport"]["iataCode"],
-                        "departureTime": rec["departureTime"],
-                        "dayOfWeek": rec["dayOfWeek"]
-                    },
-                    {"$set": rec},
-                    upsert=True
-                )
+                try:
+                    flights_col.update_one(
+                        {
+                            "departureAirport.iataCode": rec["departureAirport"]["iataCode"],
+                            "arrivalAirport.iataCode": rec["arrivalAirport"]["iataCode"],
+                            "departureTimeOfDay": rec["departureTimeOfDay"],
+                            "dayOfWeek": rec["dayOfWeek"]
+                        },
+                        {"$set": rec},
+                        upsert=True
+                    )
+                except Exception as e:
+                    print(f"Error during error-handling upsert: {e}")
             print(f"Upserted {len(records)} flights before error.")
         return False, len(records), mode, offset
