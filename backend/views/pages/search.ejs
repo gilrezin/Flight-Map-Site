@@ -166,29 +166,33 @@
                                     </div>
                                     <div class="col-md-2 d-flex flex-column justify-content-center card-body duration">
                                         <%
-                                                const dep = new Date(flight.departureTime);
-                                                const arr = new Date(flight.arrivalTime);
-                                                const userDate = new Date(searchParams.date + 'T12:00:00').toLocaleDateString('en-US');
+                                            if (!searchParams.date) {
+                                                searchParams.date = new Date().toISOString().split('T')[0]; // Default to today if no date provided
+                                            }
+                                            
+                                            const dep = new Date(flight.departureTime);
+                                            const arr = new Date(flight.arrivalTime);
+                                            const userDate = new Date(searchParams.date + 'T12:00:00').toLocaleDateString('en-US');
 
-                                                const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false }; // Customize hour12 as needed
-                                                
-                                                const depTime = new Date(2000, 0, 1, dep.getUTCHours(), dep.getUTCMinutes()).toLocaleTimeString('en-US', timeOptions);
-                                                const arrTime = new Date(2000, 0, 1, arr.getUTCHours(), arr.getUTCMinutes()).toLocaleTimeString('en-US', timeOptions);
-                                                
-                                                let durationMs = arr - dep;
+                                            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false }; // Customize hour12 as needed
+                                            
+                                            const depTime = new Date(2000, 0, 1, dep.getUTCHours(), dep.getUTCMinutes()).toLocaleTimeString('en-US', timeOptions);
+                                            const arrTime = new Date(2000, 0, 1, arr.getUTCHours(), arr.getUTCMinutes()).toLocaleTimeString('en-US', timeOptions);
+                                            
+                                            let durationMs = arr - dep;
 
-                                                // Handle overnight flights (arrival next day)
-                                                if (durationMs < 0) {
-                                                durationMs += 24 * 60 * 60 * 1000; // add 24 hours in milliseconds
-                                                }
+                                            // Handle overnight flights (arrival next day)
+                                            if (durationMs < 0) {
+                                            durationMs += 24 * 60 * 60 * 1000; // add 24 hours in milliseconds
+                                            }
 
-                                                const totalMinutes = Math.floor(durationMs / (1000 * 60));
-                                                const durationHours = Math.floor(totalMinutes / 60);
-                                                const durationMinutes = totalMinutes % 60;
+                                            const totalMinutes = Math.floor(durationMs / (1000 * 60));
+                                            const durationHours = Math.floor(totalMinutes / 60);
+                                            const durationMinutes = totalMinutes % 60;
 
-                                                const nextDay = new Date(searchParams.date + 'T12:00:00');
-                                                nextDay.setDate(nextDay.getDate() + 1);
-                                                const arrDate = arr.getUTCHours() < dep.getUTCHours() ? nextDay.toLocaleDateString('en-US') : userDate;
+                                            const nextDay = new Date(searchParams.date + 'T12:00:00');
+                                            nextDay.setDate(nextDay.getDate() + 1);
+                                            const arrDate = arr.getUTCHours() < dep.getUTCHours() ? nextDay.toLocaleDateString('en-US') : userDate;
                                         %>
                                         <h4><%= userDate %></h4>
                                         <h3><%= depTime %>-<%= arrTime %></h3>

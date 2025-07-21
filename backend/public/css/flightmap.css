@@ -31,3 +31,12 @@
     transform: scale(1.05);
     transition: transform 0.2s;
 }
+
+.nav-item {
+    font-size: larger;
+}
+
+.result-item {
+    display: flex; 
+    flex-direction: column;
+}
