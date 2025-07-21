@@ -21,7 +21,7 @@ Users can access our Flight Map Site at `https://flight-map-site.onrender.com/`
    MONGODB_URI=your_mongodb_connection_string
    PORT=3000
    NODE_ENV=development
-   JWT_SECRET=your_jwt_secret_here
+   SESSION_SECRET=your_session_secret_here
    ```
 
 4. **Start the application**
