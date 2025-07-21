@@ -73,10 +73,10 @@
                 </div>
 
                 <div class="flex-column align-items-start me-2">
-                    <input type="range" min="0" max="24" step="1" aria-label="Starting hour" value="0" name="fromHour">
+                    <input type="range" min="0" max="24" step="1" aria-label="Starting hour" value="<%= searchParams.fromHour || 0 %>" name="fromHour">
                     <p class="small mb-0">0:00 - - - - - - ☀️ - - - - - - 23:59</p>
                     <div class="flex-column align-items-start me-2">
-                        <input type="range" min="0" max="24" step="1" aria-label="Ending hour" value="24" name="toHour">
+                        <input type="range" min="0" max="24" step="1" aria-label="Ending hour" value="<%= searchParams.toHour || 24 %>" name="toHour">
                     </div>
                 </div>
 
@@ -190,7 +190,7 @@
                                                 nextDay.setDate(nextDay.getDate() + 1);
                                                 const arrDate = arr.getUTCHours() < dep.getUTCHours() ? nextDay.toLocaleDateString('en-US') : userDate;
                                         %>
-                                        <h4><%= new Date(flight.departureTime).toLocaleDateString() %></h4>
+                                        <h4><%= userDate %></h4>
                                         <h3><%= depTime %>-<%= arrTime %></h3>
                                         <i>
                                             <h6> <%= durationHours %>h<%= durationMinutes %>m</h6>
