@@ -80,7 +80,7 @@ Users can access our Flight Map Site at `https://flight-map-site.onrender.com/`
         ├── admin/
         │   ├── dashboard.ejs # Admin dashboard
         │   └── login.ejs    # Admin login page
-        ├── pages/
-        │   ├── index.ejs    # Homepage
-        │   └── search.ejs   # Search results
+        └── pages/
+            ├── index.ejs    # Homepage
+            └── search.ejs   # Search results
 ```
