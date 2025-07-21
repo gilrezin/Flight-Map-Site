@@ -1,13 +1,11 @@
-// routes/admin.js
 const express = require("express");
 const multer = require("multer");
 const { MongoClient } = require("mongodb");
 const fs = require("fs");
 const bcrypt = require("bcrypt");
-const session = require("express-session");
 const router = express.Router();
 const Airline = require("../models/Airline");
-const Admin = require("../models/Admin"); // New Admin model
+const Admin = require("../models/Admin");
 
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
@@ -21,41 +19,42 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // Middleware to protect admin routes
 function requireAdmin(req, res, next) {
-  if (!req.session || !req.session.adminId) {
-    return res.status(401).json({ error: "Unauthorized" });
+  if (!req.session || !req.session.admin) {
+    return res.redirect("/admin/login");
   }
   next();
 }
 
-// POST: Admin login
-router.post("/login", express.json(), async (req, res) => {
+// POST: Admin login (EJS version)
+router.post("/login", express.urlencoded({ extended: true }), async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
-    return res.status(400).json({ error: "Missing username or password" });
+    return res.render("admin/login", { error: "Missing username or password" });
   }
 
   try {
     const admin = await Admin.findOne({ username });
-    if (!admin) return res.status(401).json({ error: "Invalid credentials" });
+    if (!admin) return res.render("admin/login", { error: "Invalid credentials" });
 
     const match = await bcrypt.compare(password, admin.password);
-    if (!match) return res.status(401).json({ error: "Invalid credentials" });
+    if (!match) return res.render("admin/login", { error: "Invalid credentials" });
 
-    req.session.adminId = admin._id;
-    res.json({ success: true });
+    req.session.admin = { id: admin._id, username: admin.username };
+    res.redirect("/admin/dashboard");
   } catch (err) {
-    res.status(500).json({ error: "Login failed" });
+    console.error("Login failed:", err);
+    res.render("admin/login", { error: "Server error" });
   }
 });
 
-// POST: Admin logout
+// POST: Admin logout (redirect to login)
 router.post("/logout", (req, res) => {
   req.session.destroy(() => {
-    res.json({ success: true });
+    res.redirect("/admin/login");
   });
 });
 
-// GET: Summary counts (protected)
+// GET: Summary counts (protected, returns JSON to dashboard via fetch)
 router.get("/summary", requireAdmin, async (req, res) => {
   try {
     const flightCount = await db.collection("flights").countDocuments();
@@ -76,27 +75,28 @@ router.post("/uploadFlights", requireAdmin, upload.single("jsonFile"), async (re
   try {
     const raw = req.file.buffer.toString("utf-8");
     const data = JSON.parse(raw);
-    if (!Array.isArray(data))
-      return res.status(400).json({ error: "Invalid format" });
+    if (!Array.isArray(data)) {
+      return res.status(400).send("Invalid JSON format.");
+    }
 
     const result = await db.collection("flights").insertMany(data);
-    res.json({ insertedCount: result.insertedCount });
+    res.send(`Uploaded ${result.insertedCount} flights successfully.`);
   } catch (err) {
-    res.status(500).json({ error: "Error uploading flights." });
+    res.status(500).send("Error uploading flights.");
   }
 });
 
-// POST: Add airline name using Mongoose model (protected)
-router.post("/addAirline", requireAdmin, express.json(), async (req, res) => {
+// POST: Add airline name (protected)
+router.post("/addAirline", requireAdmin, express.urlencoded({ extended: true }), async (req, res) => {
   const { name } = req.body;
-  if (!name) return res.status(400).json({ error: "Airline name required" });
+  if (!name) return res.status(400).send("Airline name is required.");
 
   try {
     const newAirline = new Airline({ name });
     await newAirline.save();
-    res.json({ success: true, insertedId: newAirline._id });
+    res.send("Airline added successfully.");
   } catch (err) {
-    res.status(500).json({ error: "Error adding airline." });
+    res.status(500).send("Error adding airline.");
   }
 });
 
