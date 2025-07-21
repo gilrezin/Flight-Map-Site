@@ -131,30 +131,49 @@
       if (!file) return alert("Please choose a JSON file.");
 
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("jsonFile", file); // ✅ must match multer field name
 
-      const res = await fetch("/api/admin/uploadFlights", {
-        method: "POST",
-        body: formData
-      });
-      const result = await res.json();
-      alert(result.message || `Inserted ${result.insertedCount} flights.`);
-      fetchTotals();
+      try {
+        const res = await fetch("/api/admin/uploadFlights", {
+          method: "POST",
+          body: formData
+        });
+
+        const contentType = res.headers.get("content-type") || "";
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Upload failed: ${errorText}`);
+        }
+
+        const result = contentType.includes("application/json")
+          ? await res.json()
+          : { message: await res.text() };
+
+        alert(result.message || `Inserted ${result.insertedCount} flights.`);
+        fetchTotals();
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
     }
 
     async function addAirline() {
       const airlineName = document.getElementById("airline-name").value;
       if (!airlineName.trim()) return alert("Enter an airline name.");
 
-      const res = await fetch("/api/admin/addAirline", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: airlineName })
-      });
-      const result = await res.json();
-      alert(result.message || "Airline added successfully.");
-      document.getElementById("airline-name").value = "";
-      fetchTotals();
+      try {
+        const res = await fetch("/api/admin/addAirline", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: airlineName })
+        });
+
+        const result = await res.json();
+        alert(result.message || "Airline added successfully.");
+        document.getElementById("airline-name").value = "";
+        fetchTotals();
+      } catch (err) {
+        alert(`Error adding airline: ${err.message}`);
+      }
     }
 
     // Auto-fetch on load
