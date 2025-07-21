@@ -9,17 +9,13 @@ from dateutil import parser
 from dotenv import load_dotenv
 import os
 
-# --------------------------------
 # Load .env and MongoDB connection
-# --------------------------------
 load_dotenv()
 MONGO_URI = os.getenv("MONGODB_URI")
-
-print(f"MONGO_URI = {MONGO_URI}")
-
 client = MongoClient(MONGO_URI)
 flights_col = client["flightmap"]["flights"]
 airports_col = client["flightmap"]["airports"]
+airlines_col = client["flightmap"]["airlines"]
 
 def scrape(airport, api_key, mode="Upsert", offset=0):
     try:
@@ -53,7 +49,6 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
                 if not dep_time_utc or not arr_time_utc:
                     continue
 
-                # --- Replace +00:00 with local offsets ---
                 dep_iata = dep.get("iata")
                 arr_iata = arr.get("iata")
 
@@ -97,22 +92,19 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
                     airline_name = airline.get("name")
                     flight_number = flight.get("number")
 
-                # Skip if essential fields are missing
                 if not (dep_airport_name and arr_airport_name and dep_time_local_str and arr_time_local_str and flight_number):
                     continue
 
-                # Normalize airline name if matched and not cargo
                 airline_name_clean = airline_name.strip().lower() if airline_name else ""
                 normalized = None
 
                 if "cargo" not in airline_name_clean:
-                    for doc in client["flightmap"]["airlines"].find():
+                    for doc in airlines_col.find():
                         ref = doc["name"]
                         if ref.lower() in airline_name_clean:
                             normalized = ref
                             break
 
-                # Skip flights not associated with an approved commercial airline
                 if not normalized:
                     continue
 
@@ -140,7 +132,7 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
             if len(raw_flights) < limit:
                 break
             else:
-                offset += limit  # Keep chaining correctly when looping
+                offset += limit
 
         if not records:
             print("No valid flight data returned.")
@@ -174,18 +166,16 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
         else:
             filename = f"{airport}_{datetime.utcnow().date()}.json"
             with open(filename, "w") as f:
-                for rec in records:
-                    f.write(json.dumps(rec) + "\n")
+                json.dump(records, f, indent=2)
             print(f"Saved {len(records)} records to {filename}")
 
-        print(f"Total API requests made for {airport}: {int(offset/limit) + 1}")
-        return True, len(records), mode, offset  # Return final offset used
+        print(f"Total API requests made for {airport}: {int(offset / limit) + 1}")
+        return True, len(records), mode, offset
 
     except Exception as e:
         print(f"Error: {e}")
         if records:
             print(f"Attempting to upsert {len(records)} records collected before the error...")
-            # Deduplicate before upsert
             unique = {}
             for rec in records:
                 key = (
@@ -209,4 +199,4 @@ def scrape(airport, api_key, mode="Upsert", offset=0):
                     upsert=True
                 )
             print(f"Upserted {len(records)} flights before error.")
-        return False, len(records), mode, offset  # Return offset so GUI can retry properly
+        return False, len(records), mode, offset
