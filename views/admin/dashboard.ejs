@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+
+    .header {
+      background-color: #333;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      position: relative;
+    }
+
+    .logout-button {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-size: 14px;
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 5px;
+    }
+
+    .section {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 30px;
+    }
+
+    .section h2 {
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 5px;
+    }
+
+    .alert {
+      background-color: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+      padding: 10px;
+      border-radius: 3px;
+    }
+
+    .button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Flight Map Admin Dashboard</h1>
+    <form action="/admin/logout" method="POST" style="display:inline;">
+      <button class="logout-button" type="submit">Logout</button>
+    </form>
+  </div>
+
+  <div class="container">
+    <!-- Summary Section -->
+    <div class="section">
+      <h2>Database Summary</h2>
+      <div class="alert" id="status">Checking database status...</div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <p>Total Flights: <span id="total-flights">0</span></p>
+          <p>Total Airports: <span id="total-airports">0</span></p>
+          <p>Total Airlines: <span id="total-airlines">0</span></p>
+        </div>
+        <button onclick="fetchTotals()" class="button">Refresh</button>
+      </div>
+    </div>
+
+    <!-- Upload Flights -->
+    <div class="section">
+      <h2>Upload Flight Data (JSON)</h2>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <input type="file" accept="application/json" id="flight-file" />
+        <button onclick="uploadJSON()" class="button">Upload</button>
+      </div>
+    </div>
+
+    <!-- Add Airline -->
+    <div class="section">
+      <h2>Add New Airline</h2>
+      <div style="display: flex; gap: 10px;">
+        <input type="text" id="airline-name" placeholder="Airline Name" style="flex: 1; padding: 8px;" />
+        <button onclick="addAirline()" class="button">Add Airline</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function fetchTotals() {
+      try {
+        const res = await fetch("/api/admin/summary");
+        const data = await res.json();
+        document.getElementById("status").textContent = "Database is online.";
+        document.getElementById("total-flights").textContent = data.flights;
+        document.getElementById("total-airports").textContent = data.airports;
+        document.getElementById("total-airlines").textContent = data.airlines;
+      } catch (err) {
+        document.getElementById("status").textContent = "Database is offline or unreachable.";
+      }
+    }
+
+    async function uploadJSON() {
+      const fileInput = document.getElementById("flight-file");
+      const file = fileInput.files[0];
+      if (!file) return alert("Please choose a JSON file.");
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/admin/uploadFlights", {
+        method: "POST",
+        body: formData
+      });
+      const result = await res.json();
+      alert(result.message || `Inserted ${result.insertedCount} flights.`);
+      fetchTotals();
+    }
+
+    async function addAirline() {
+      const airlineName = document.getElementById("airline-name").value;
+      if (!airlineName.trim()) return alert("Enter an airline name.");
+
+      const res = await fetch("/api/admin/addAirline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: airlineName })
+      });
+      const result = await res.json();
+      alert(result.message || "Airline added successfully.");
+      document.getElementById("airline-name").value = "";
+      fetchTotals();
+    }
+
+    // Auto-fetch on load
+    fetchTotals();
+  </script>
+</body>
+</html>

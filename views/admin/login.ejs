@@ -1,1 +1,75 @@
-login
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Login</title>
+  <style>
+    body {
+      background-color: #f5f5f5;
+      font-family: Arial, sans-serif;
+    }
+
+    .login-container {
+      max-width: 400px;
+      margin: 100px auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 4px;
+    }
+
+    .login-container input {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
+    }
+
+    .login-container button {
+      width: 100%;
+      padding: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+    }
+
+    .error-message {
+      color: red;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2>Admin Login</h2>
+    <input type="text" id="username" placeholder="Username" />
+    <input type="password" id="password" placeholder="Password" />
+    <div id="error" class="error-message"></div>
+    <button onclick="login()">Log In</button>
+  </div>
+
+  <script>
+    async function login() {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      const errorDiv = document.getElementById("error");
+
+      try {
+        const res = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          errorDiv.textContent = errData.error || "Login failed";
+          return;
+        }
+
+        // Redirect to dashboard after login
+        window.location.href = "/admin/dashboard";
+      } catch {
+        errorDiv.textContent = "Server error";
+      }
+    }
+  </script>
+</body>
+</html>
