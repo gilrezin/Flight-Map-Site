@@ -1,86 +1,38 @@
-# Flight-Map-Site
-A website that visually displays all destinations from a given airport with selected criteria.
-Users can access our Flight Map Site at `https://flight-map-site.onrender.com/`
+# SkyScraper
+Collect real-time data from aviationstack.com and upsert it to MongoDB
 
-## Local Installation
+Make sure .env file with MONGODB_URI= is present in the SkyScraper folder.
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd flight-map-backend
-   ```
+airport.txt holds the airports IATA code to download  
+api_keys.txt holds the access keys for AviationStack
 
+Create free AviationStack API keys:  
+`https://aviationstack.com/signup/free`
+  
 2. **Install dependencies**
    ```bash
    npm install
    ```
+## SkyScraper single-airport JSON builder
 
-3. **Environment Setup**
-   Create a `.env` file in the root directory:
-   ```env
-   MONGODB_URI=your_mongodb_connection_string
-   PORT=3000
-   NODE_ENV=development
-   SESSION_SECRET=your_session_secret_here
-   ```
-
-4. **Start the application**
    ```bash
-   # Development mode with auto-reload
-   npm run dev
-   
-   # Production mode
-   npm start
-   ```
+   python3 scraper_gui.py
 
-5. **Test the connection**
+   ```
+1. Enter airport IATA code
+2. Enter a valid AviationStack API code
+3. Select JSON as the Output Mode to create a JSON file,  
+   or Upsert to atomatically upsert to MongoDB
+
+
+## SkyScraper Auto-Upserter
+
    ```bash
-   npm test
+   python3 auto_scraper_gui.py
+
    ```
+Airports in airports.txt are automatically loaded  
+API keys from api_keys.txt are automatically loaded  
 
-## Usage
-
-- **Homepage**: `http://localhost:3000` - Interactive map and search
-- **Search Page**: `http://localhost:3000/search` - Flight search results
-- **Admin Dashboard**: `http://localhost:3000/admin` - Database management
-
-## Admin Features
-
-- View database statistics (flight count, active routes)
-- Upload flight data via JSON files
-- Add new airlines to the system
-
-## Project Structure
-
-```
-├── backend/
-│   ├── config/
-│   │   └── database.js      # MongoDB connection
-│   ├── controllers/
-│   │   └── LoginController.js
-│   ├── models/
-│   │   ├── Admin.js         # Admin user schema
-│   │   ├── Airline.js       # Airline schema
-│   │   └── Airport.js       # Airport schema
-│   ├── routes/
-│   │   └── admin.js         # Admin route handlers
-│   ├── .env                 # Environment variables
-│   ├── package.json         # Backend dependencies
-│   ├── package-lock.json
-│   └── server.js            # Main server file
-│    
-└── frontend/
-    ├── public/
-    │   ├── css/
-    │   │   └── flightmap.css # Custom styles
-    │   └── js/
-    │       ├── MapController.js
-    │       └── SearchResultController.js
-    └── views/
-        ├── admin/
-        │   ├── dashboard.ejs # Admin dashboard
-        │   └── login.ejs    # Admin login page
-        └── pages/
-            ├── index.ejs    # Homepage
-            └── search.ejs   # Search results
-```
+Airports added to the Airports List get added to airports.txt  
+API keys added to the API Keys List get added to api_keys.txt
