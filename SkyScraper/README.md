@@ -31,8 +31,11 @@ Create free AviationStack API keys:
    python3 auto_scraper_gui.py
 
    ```
-Airports in airports.txt are automatically loaded  
-API keys from api_keys.txt are automatically loaded  
+Automates flight data collection every 4 hours  
+and upserts to MongoDB at: 2:00, 6:00, 10:00  
+
+Airports in airports.txt are automatically loaded and traversed  
+API keys from api_keys.txt are automatically loaded and cycled out  
 
 Airports added to the Airports List get added to airports.txt  
 API keys added to the API Keys List get added to api_keys.txt
